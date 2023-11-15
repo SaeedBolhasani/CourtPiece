@@ -18,16 +18,7 @@ namespace CourtPiece.WebApi
 
                  siloBuilder.AddMemoryStreams("test").AddMemoryGrainStorage("PubSubStore");
 
-                 //siloBuilder.AddBroadcastChannel("my-provider",
-                 //    options => options.FireAndForgetDelivery = false);
-
-                 siloBuilder.AddFileGrainStorage("File", options =>
-                 {
-                     string path = Environment.GetFolderPath(
-                         Environment.SpecialFolder.ApplicationData);
-
-                     options.RootDirectory = Path.Combine(path, "Orleans/GrainState/v1");
-                 });
+                 siloBuilder.AddFileGrainStorage("File");
 
                  siloBuilder.Configure<GrainCollectionOptions>(i =>
                  {
