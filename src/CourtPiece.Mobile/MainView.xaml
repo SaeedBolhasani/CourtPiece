@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="CourtPiece.Mobile.MainView"             >
+    <ScrollView>
+        <VerticalStackLayout   >
+            <ScrollView>
+                <FlexLayout Wrap="Wrap"  x:Name="Images"  MaximumWidthRequest="500"                AlignItems="Center"               >
+               
+                    <!--<Image  Source="s3.jpg" MaximumWidthRequest="80"></Image>
+                        <Image  Source="s3.jpg" MaximumWidthRequest="80" ></Image>
+                        <Image  Source="s3.jpg" MaximumWidthRequest="80" HorizontalOptions="CenterAndExpand" ></Image>
+                        <Image  Source="s3.jpg" MaximumWidthRequest="80" HorizontalOptions="CenterAndExpand" ></Image>
+                        <Image  Source="s3.jpg" MaximumWidthRequest="80" HorizontalOptions="CenterAndExpand" ></Image>
+                        <Image  Source="s3.jpg" MaximumWidthRequest="80" HorizontalOptions="CenterAndExpand" ></Image>
+                        <Image  Source="s3.jpg" MaximumWidthRequest="80" HorizontalOptions="CenterAndExpand" ></Image>
+                        <Image  Source="s3.jpg" MaximumWidthRequest="80" HorizontalOptions="CenterAndExpand" ></Image>
+                        <Image  Source="s3.jpg" MaximumWidthRequest="80" HorizontalOptions="CenterAndExpand" ></Image>
+                        <Image  Source="s3.jpg" MaximumWidthRequest="80" HorizontalOptions="CenterAndExpand" ></Image>
+                        <Image  Source="s3.jpg" MaximumWidthRequest="80" HorizontalOptions="CenterAndExpand" ></Image>
+                        <Image  Source="s3.jpg" MaximumWidthRequest="80" HorizontalOptions="CenterAndExpand" ></Image>
+                        <Image  Source="s3.jpg" MaximumWidthRequest="80" HorizontalOptions="CenterAndExpand" ></Image>-->
+
+                    <!--<ImageButton Clicked="ImageButton_Clicked" Source="s1.jpg" MaximumWidthRequest="80"></ImageButton>
+                <Image Source="s2.jpg" MaximumWidthRequest="80"></Image>
+
+                <Image Source="s3.jpg" MaximumWidthRequest="80"></Image>
+                <Image Source="s4.jpg" MaximumWidthRequest="80"></Image>
+                <Image Source="s5.jpg" MaximumWidthRequest="80" ></Image>
+                <Image Source="s6.jpg" MaximumWidthRequest="80"></Image>
+                <Image Source="s7.jpg" MaximumWidthRequest="80"></Image>
+                <Image Source="s8.jpg" MaximumWidthRequest="80"></Image>
+                <Image Source="s9.jpg" MaximumWidthRequest="80"></Image>
+                <Image Source="d10.jpg" MaximumWidthRequest="80"></Image>
+                <Image Source="s11.jpg" MaximumWidthRequest="80"></Image>
+                <Image Source="s12.jpg" MaximumWidthRequest="80"></Image>
+                <Image Source="s13.jpg" MaximumWidthRequest="80"></Image>-->
+
+
+                </FlexLayout>
+            </ScrollView>
+            <Button
+        x:Name="CounterBtn"
+        Text="Click me"
+        SemanticProperties.Hint="Counts the number of times you click"
+        Clicked="OnCounterClicked"
+        HorizontalOptions="Center" />
+
+
+            <Label>Enter Your Name</Label>
+            <Button x:Name="GuidButton" Clicked="GuidButton_Clicked" Text="GUID"></Button>
+            <Entry x:Name="NameEntry"></Entry>
+
+            <Entry x:Name="RoomEntry" Text="0c3b1a06-7ed9-11ee-b962-0242ac120002"></Entry>
+
+        </VerticalStackLayout>
+
+    </ScrollView>
+
+</ContentView>
