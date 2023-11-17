@@ -14,6 +14,7 @@ namespace CourtPiece.WebApi
         {
             return host.UseOrleans(siloBuilder =>
              {
+              
                  siloBuilder.UseLocalhostClustering();
 
                  siloBuilder.AddMemoryStreams("test").AddMemoryGrainStorage("PubSubStore");

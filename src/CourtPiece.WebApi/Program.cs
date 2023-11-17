@@ -45,7 +45,7 @@ app.UseSwaggerUI(c =>
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "Court Piece API v1");
 });
 app.MapControllers();
-app.MapHub<PlayerHub>("/chatHub");
+app.MapHub<RoomHub>("/chatHub");
 app.Run();
 
 public partial class Program

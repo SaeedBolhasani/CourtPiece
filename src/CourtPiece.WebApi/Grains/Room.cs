@@ -1,58 +1,14 @@
 ﻿using CourtPiece.Common.Model;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.Logging;
 using Orleans.Concurrency;
 using Orleans.Providers;
 using Orleans.Runtime;
 using Orleans.Streams;
-using Orleans.Utilities;
-using System;
-
-public class RoomManagerState
-{
-    public List<Guid> EmptyRoomIds { get; set; } = new List<Guid>();
-}
-
-public interface IRoomManager: IGrainWithIntegerKey
-{
-    Task<IRoom> CreateRoom();
-
-    Task MarkAsFull(IRoom room);
-}
-
-[ImplicitStreamSubscription("test")]
-[StorageProvider(ProviderName = "File")]
-public class RoomManager : Grain<RoomManagerState>, IRoomManager
-{
-    public override async Task OnActivateAsync(CancellationToken cancellationToken)
-    {
-        var ss = this.ServiceProvider.GetRequiredService<IClusterClient>();
-        var streamProvider = ss.GetStreamProvider("test");
-        await streamProvider.GetStream<string>("test").SubscribeAsync(async i =>
-        {
-            await Task.CompletedTask;
-        });
-        await base.OnActivateAsync(cancellationToken);
-    }
-    public Task<IRoom> CreateRoom()
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task MarkAsFull(IRoom room)
-    {
-        this.State.EmptyRoomIds.Add(room.GetPrimaryKey());
-        return Task.CompletedTask;
-    }
-}
 
 [StorageProvider(ProviderName = "File")]
-
 public class Room : Grain<RoomState>, IRoom
 {
-    private IHubContext<PlayerHub> playerHub;
-    private IStreamProvider streamProvider;
-    private IAsyncStream<string> stream;
+    private IHubContext<RoomHub> playerHub;
 
     public async Task Action(Immutable<ICard> card, IPlayer player)
     {
@@ -60,40 +16,41 @@ public class Room : Grain<RoomState>, IRoom
         var cc = State.PlayerCards[1].cards[0] == card.Value;
     }
 
-    public async Task AddPlayer(IPlayer player)
+    public async Task<JoinPlayerResult> JoinPlayer(IPlayer player)
     {
         if (State.PlayerIds.Count >= 4)
         {
-            throw new Exception();
+            return JoinPlayerResult.Error("Room is full.");
         }
-        if (State.PlayerIds.Contains(player.GetGrainId().GetIntegerKey()))
+
+        var userId = player.GetPrimaryKeyLong();
+        if (State.PlayerIds.Contains(userId))
         {
-            throw new Exception();
+            return JoinPlayerResult.Error("User has been joined already!");
         }
 
-        await this.playerHub.SentToRoom(this.GetGrainId().GetGuidKey(), "User Joined " + player.GetGrainId().GetIntegerKey());
+        await this.playerHub.SentToRoom(this.GetGrainId().GetGuidKey(), "User Joined " + userId);
 
 
-        this.State.PlayerIds.Add(player.GetGrainId().GetIntegerKey());
+        this.State.PlayerIds.Add(userId);
 
         if (this.State.PlayerIds.Count == 4)
         {
-            //var roomManager = GrainFactory.GetGrain<IRoomManager>(0);
-            //await roomManager.MarkAsFull(this);
             State.TurnId = State.PlayerIds[0];
             State.TrumpCaller = State.PlayerIds[0];
-            //State.TrumpSuit = 
 
             var cards = GetCards().Chunk(13).ToArray();
             var i = 0;
             foreach (var item in State.PlayerIds)
             {
                 this.State.PlayerCards.Add((item, cards[i].ToList()));
-
                 await this.playerHub.SendToUser(item, cards[i]);
                 i++;
             }
+            return JoinPlayerResult.GameStarted;
         }
+
+        return JoinPlayerResult.Success;
     }
 
 
@@ -110,7 +67,7 @@ public class Room : Grain<RoomState>, IRoom
 
     public override async Task OnActivateAsync(CancellationToken cancellationToken)
     {
-        this.playerHub = this.ServiceProvider.GetRequiredService<IHubContext<PlayerHub>>();       
+        this.playerHub = this.ServiceProvider.GetRequiredService<IHubContext<RoomHub>>();
         await base.OnActivateAsync(cancellationToken);
     }
 

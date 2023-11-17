@@ -18,7 +18,7 @@ namespace CourtPiece.Mobile
         public event EventHandler<Card[]> OnCardReceived;
         internal async Task Join(int id, Guid roomId)
         {
-            if (this.hubConnection != null) return;
+            //if (this.hubConnection != null) return;
 
             var token = await httpClient.PostAsJsonAsync("api/Authentication/login", new
             {
@@ -33,6 +33,8 @@ namespace CourtPiece.Mobile
         
 
             hubConnection = await new PlayerHub().Connect(t);
+           
+
             hubConnection.On<Card[]>("Game", i =>
             {
                 this.cards = i;
@@ -55,7 +57,7 @@ namespace CourtPiece.Mobile
 
 
             hubConnection.Closed += HubConnection_Closed;
-            await hubConnection.SendAsync("join", roomId.ToString());
+            await hubConnection.SendAsync("joinToRandomRoom");
             //var result = await httpClient.GetAsync($"api/player/join?roomId={roomId}");
         }
 

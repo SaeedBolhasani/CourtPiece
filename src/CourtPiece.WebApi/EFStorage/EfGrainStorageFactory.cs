@@ -1,4 +1,6 @@
-﻿internal static class EFGrainStorageFactory
+﻿using Orleans.Storage;
+
+internal static class EFGrainStorageFactory
 {
     internal static IGrainStorage Create(
         IServiceProvider services, string name)

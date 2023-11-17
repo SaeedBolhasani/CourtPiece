@@ -14,9 +14,23 @@ namespace CourtPiece.Mobile
                })               ;
             
             var c = connectionBuilder.Build();
-           
-            await c.StartAsync();
-            return c;
+
+            try
+            {                
+                c.Closed += C_Closed;
+                await c.StartAsync();
+                return c;
+            }
+            catch (Exception ex)
+            {
+
+                throw;
+            }
+        }
+
+        private Task C_Closed(Exception arg)
+        {
+            return Task.CompletedTask;
         }
     }
 }
