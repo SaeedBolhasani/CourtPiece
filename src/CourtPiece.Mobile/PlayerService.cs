@@ -10,8 +10,13 @@ namespace CourtPiece.Mobile
         private Card[] cards;
         private HubConnection hubConnection;
 
+        public event EventHandler<string> OnMessageReceived;
+
+        private bool chooseTrumpSuit = false;
+
+        private Guid roomId;
         public PlayerService(HttpClient httpClient)
-        {
+        {            
             this.httpClient = httpClient;
             httpClient.BaseAddress = new Uri("http://localhost:5182/");
         }
@@ -43,14 +48,37 @@ namespace CourtPiece.Mobile
             });
             hubConnection.On<string>("Room", i =>
             {
+                this.OnMessageReceived?.Invoke(this, i);
                 Console.WriteLine(i);
             });
-            hubConnection.On<string>("PlayerJoined", i =>
+            hubConnection.On<Guid>("YouJoined", i =>
             {
+                this.roomId = i;
+            });
+
+            hubConnection.On<string>("Error", i =>
+            {
+                this.OnMessageReceived?.Invoke(this, i);
+
                 Console.WriteLine(i);
             });
 
-            hubConnection.On<object>("Error", i =>
+            hubConnection.On<Card[]>("ChooseTrumpSuit", i =>
+            {
+                this.cards = i;
+                OnCardReceived?.Invoke(this, i);
+                chooseTrumpSuit = true;
+            });
+
+            hubConnection.On<Card[]>("Cards", i =>
+            {
+                this.cards = i;
+                this.chooseTrumpSuit = false;
+                OnCardReceived?.Invoke(this, i);
+                Console.WriteLine(i);
+            });
+
+            hubConnection.On<Card[]>("TrumpSuit", i =>
             {
                 Console.WriteLine(i);
             });
@@ -66,9 +94,13 @@ namespace CourtPiece.Mobile
             return Task.CompletedTask;
         }
 
-        public async Task Action(Card card,Guid roomId)
+        public async Task Action(Card card)
         {
-            await hubConnection.SendAsync("action", card, roomId.ToString());
+            if (chooseTrumpSuit)
+                await hubConnection.SendAsync("ChooseTrumpSuit", card.Type, roomId.ToString());
+            else
+                await hubConnection.SendAsync("action", card, roomId.ToString());
+
 
         }
     }

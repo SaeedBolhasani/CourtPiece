@@ -5,6 +5,7 @@ public interface IRoom : IGrainWithGuidKey
 {
     Task<JoinPlayerResult> JoinPlayer(IPlayer player);
     Task Action(Immutable<ICard> card, IPlayer player);
+    Task ChooseTrumpSuit(CardTypes trumpSuit, IPlayer player);
 }
 
 

@@ -26,7 +26,6 @@ namespace CourtPiece.WebApi
                      i.CollectionQuantum = TimeSpan.FromSeconds(10);
                      i.CollectionAge = TimeSpan.FromSeconds(20);
                      i.ClassSpecificCollectionAge.Add(nameof(RoomManager),TimeSpan.FromMinutes(5));
-
                  });
 
                  siloBuilder.ConfigureOrleansSignalR();

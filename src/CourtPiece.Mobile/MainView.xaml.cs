@@ -2,18 +2,26 @@ using CourtPiece.Common.Model;
 
 namespace CourtPiece.Mobile;
 
-public partial class MainView : ContentView
+public partial class MainView : ContentView, IDisposable
 {
+    private readonly IServiceScope scope;
     private readonly PlayerService playerService;
 
-    
+     
+
     public MainView()
-	{
-		InitializeComponent();
-        this.playerService = Application.Current.MainPage
+    {
+        InitializeComponent();
+
+        scope = Application.Current.MainPage
                 .Handler
                 .MauiContext
-                .Services.GetService<PlayerService>();
+                .Services
+                .CreateScope();
+
+
+
+        this.playerService = scope.ServiceProvider.GetService<PlayerService>();
 
         playerService.OnCardReceived += (s, cards) =>
         {
@@ -23,6 +31,14 @@ public partial class MainView : ContentView
             });
 
             DisplayCards(cards);
+        };
+
+        playerService.OnMessageReceived += (s, message) =>
+        {
+            Dispatcher.Dispatch(() =>
+            {
+                MessageLabel.Text = message;
+            });
         };
     }
 
@@ -62,9 +78,14 @@ public partial class MainView : ContentView
     private async void ImageButton_Clicked(object sender, EventArgs e)
     {
         var button = (ImageButton)sender;
-        Card card = button.StyleId; 
+        Card card = button.StyleId;
         //button.ScaleTo(1.2);
         //SemanticScreenReader.Announce(button);
-        await playerService.Action(card, GetRoomId());
+        await playerService.Action(card);
+    }
+
+    public void Dispose()
+    {
+        scope.Dispose();
     }
 }

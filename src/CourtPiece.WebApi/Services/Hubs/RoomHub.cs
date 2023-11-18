@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Orleans;
 using Orleans.Concurrency;
+using Orleans.Runtime;
 using System.Security.Claims;
 
 [Authorize]
@@ -40,22 +41,37 @@ public class RoomHub : Hub
     public async Task JoinToRandomRoom(IGrainFactory grainFactory)
     {
         try
-        {
+        {            
             int userId = GetUserId();
             var roomManager = GetRoomManager(grainFactory);
             var result = await roomManager.JoinToRandomRoom(grainFactory.GetGrain<IPlayer>(userId));
-
             if (result.IsSuccess == false)
             {
                 await this.Clients.User(userId.ToString()).SendAsync("Error", result.ErrorMessage, default);
                 Context.Abort();
+                return;
             }
-            //await this.Clients.User(userId.ToString()).SendAsync("UserJoinedSuccessfully", retus, default);
-
+            await this.Groups.AddToGroupAsync(Context.ConnectionId, result.RoomId.ToString());
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "An error occurred in Class: {0}, Method: {1}. User Id:{2}.", nameof(RoomHub), nameof(Join), GetUserId());
+            logger.LogError(ex, "An error occurred in Class: {0}, Method: {1}. User Id:{2}.", nameof(RoomHub), nameof(JoinToRandomRoom), GetUserId());
+            throw;
+        }
+    }
+
+    public async Task ChooseTrumpSuit(CardTypes cardType, Guid roomId, IGrainFactory grainFactory)
+    {
+        try
+        {
+            int userId = GetUserId();
+            var room = grainFactory.GetGrain<IRoom>(roomId);
+            await room.ChooseTrumpSuit(cardType, grainFactory.GetGrain<IPlayer>(userId));
+           
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "An error occurred in Class: {0}, Method: {1}. User Id:{2}.", nameof(RoomHub), nameof(ChooseTrumpSuit), GetUserId());
             throw;
         }
     }
