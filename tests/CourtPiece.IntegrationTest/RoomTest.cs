@@ -44,6 +44,37 @@ namespace CourtPiece.IntegrationTest
             //semaphore.WaitOne();
         }
 
+        [Fact]
+        public async void Test_JoinRandomRoom()
+        {
+           
+
+            var semaphore = new SemaphoreSlim(0);
+
+            // Create and join 4 players
+            var p1 = new TestPlayer(testingWebAppFactory, semaphore);
+            await p1.Create("player1");
+            var t1 = Task.Run(p1.JoinRandomRoom);
+
+            var p2 = new TestPlayer(testingWebAppFactory, semaphore);
+            await p2.Create("player2");
+            var t2 = Task.Run(p2.JoinRandomRoom);
+
+            var p3 = new TestPlayer(testingWebAppFactory, semaphore);
+            await p3.Create("player3");
+            var t3 = Task.Run(p3.JoinRandomRoom);
+
+            var p4 = new TestPlayer(testingWebAppFactory, semaphore);
+            await p4.Create("player4");
+            var t4 = Task.Run(p4.JoinRandomRoom);
+
+            await t1;
+            Task.WaitAll(t2, t3, t4);
+
+            Thread.Sleep(TimeSpan.FromMinutes(7));
+            //semaphore.WaitOne();
+        }
+
 
         [Fact]
         public async void Test2()

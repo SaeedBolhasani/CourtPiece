@@ -69,6 +69,12 @@ namespace CourtPiece.IntegrationTest.Infrastructure
         {
             await connection.SendAsync("join", roomId.ToString());   
             semaphore.Wait();
-        }      
+        }
+
+        public async Task JoinRandomRoom()
+        {
+            await connection.SendAsync("joinToRandomRoom");
+            semaphore.Wait();
+        }
     }   
 }

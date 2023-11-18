@@ -13,11 +13,11 @@ namespace CourtPiece.WebApi
         public static IHostBuilder ConfigureOrleans(this IHostBuilder host)
         {
             return host.UseOrleans(siloBuilder =>
-             {
-              
+            {
+
                  siloBuilder.UseLocalhostClustering();
 
-                 siloBuilder.AddMemoryStreams("test").AddMemoryGrainStorage("PubSubStore");
+                 //siloBuilder.AddMemoryStreams("test").AddMemoryGrainStorage("PubSubStore");
 
                  siloBuilder.AddFileGrainStorage("File");
 
@@ -25,6 +25,7 @@ namespace CourtPiece.WebApi
                  {
                      i.CollectionQuantum = TimeSpan.FromSeconds(10);
                      i.CollectionAge = TimeSpan.FromSeconds(20);
+                     i.ClassSpecificCollectionAge.Add(nameof(RoomManager),TimeSpan.FromMinutes(5));
 
                  });
 
@@ -49,7 +50,7 @@ namespace CourtPiece.WebApi
                 options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
                 options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
             })
-                        // Adding Jwt Bearer  
+            // Adding Jwt Bearer  
             .AddJwtBearer(options =>
             {
                 options.SaveToken = true;

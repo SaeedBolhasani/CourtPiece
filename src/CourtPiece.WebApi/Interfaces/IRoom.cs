@@ -20,27 +20,31 @@ public class JoinPlayerResult
     [Id(2)]
     public GameStatus Status { get; private set; }
 
+    [Id(3)]
+    public Guid RoomId { get; private set; }
 
-    public static readonly JoinPlayerResult Success = new()
+    public static JoinPlayerResult Success(Guid roomId) => new()
     {
         IsSuccess = true,
         ErrorMessage = null,
+        RoomId = roomId,
         Status = GameStatus.NotStarted
     };
 
-    public static readonly JoinPlayerResult GameStarted = new()
+    public static JoinPlayerResult GameStarted(Guid roomId) => new()
     {
         IsSuccess = true,
         ErrorMessage = null,
+        RoomId = roomId,
         Status = GameStatus.Started
     };
 
-    public static JoinPlayerResult Error(string message) => new()
+    public static JoinPlayerResult Error(string message, Guid roomId) => new()
     {
         IsSuccess = false,
         ErrorMessage = message,
+        RoomId = roomId,
     };
-
 
 }
 

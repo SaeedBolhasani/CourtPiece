@@ -20,13 +20,13 @@ public class Room : Grain<RoomState>, IRoom
     {
         if (State.PlayerIds.Count >= 4)
         {
-            return JoinPlayerResult.Error("Room is full.");
+            return JoinPlayerResult.Error("Room is full.", this.GetPrimaryKey());
         }
 
         var userId = player.GetPrimaryKeyLong();
         if (State.PlayerIds.Contains(userId))
         {
-            return JoinPlayerResult.Error("User has been joined already!");
+            return JoinPlayerResult.Error("User has been joined already!", this.GetPrimaryKey());
         }
 
         await this.playerHub.SentToRoom(this.GetGrainId().GetGuidKey(), "User Joined " + userId);
@@ -47,10 +47,10 @@ public class Room : Grain<RoomState>, IRoom
                 await this.playerHub.SendToUser(item, cards[i]);
                 i++;
             }
-            return JoinPlayerResult.GameStarted;
+            return JoinPlayerResult.GameStarted(this.GetPrimaryKey());
         }
 
-        return JoinPlayerResult.Success;
+        return JoinPlayerResult.Success(this.GetPrimaryKey());
     }
 
 

@@ -50,7 +50,7 @@ public class RoomHub : Hub
                 await this.Clients.User(userId.ToString()).SendAsync("Error", result.ErrorMessage, default);
                 Context.Abort();
             }
-            await this.Clients.User(userId.ToString()).SendAsync("UserJoinedSuccessfully", retus, default);
+            //await this.Clients.User(userId.ToString()).SendAsync("UserJoinedSuccessfully", retus, default);
 
         }
         catch (Exception ex)

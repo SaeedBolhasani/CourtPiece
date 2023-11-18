@@ -3,11 +3,13 @@
 [StorageProvider(ProviderName = "File")]
 public class RoomManager : Grain<RoomManagerState>, IRoomManager
 {
-    public Task<IRoom> CreateNewRoom()
+    public async Task<JoinPlayerResult> JoinToNewRoom(IPlayer player)
     {
         var roomId = Guid.NewGuid();
         this.State.EmptyRoomIds.Add(roomId);
-        return Task.FromResult(GrainFactory.GetGrain<IRoom>(roomId));
+        var room = GrainFactory.GetGrain<IRoom>(roomId);
+
+        return await room.JoinPlayer(player);
     }
 
     public async Task<JoinPlayerResult> JoinToRoom(Guid roomId, IPlayer player)
@@ -18,17 +20,16 @@ public class RoomManager : Grain<RoomManagerState>, IRoomManager
 
     public async Task<JoinPlayerResult> JoinToRandomRoom(IPlayer player)
     {
-        IRoom room;
+        JoinPlayerResult joinPlayerResult;
 
         if (this.State.EmptyRoomIds.Any())
-            room = GrainFactory.GetGrain<IRoom>(this.State.EmptyRoomIds.First());
+            joinPlayerResult = await JoinToRoom(this.State.EmptyRoomIds.First(), player);
         else
-            room = await CreateNewRoom();
+            joinPlayerResult = await JoinToNewRoom(player);
+       
 
-        var joinPlayerResult = await room.JoinPlayer(player);
-
-        if (joinPlayerResult == JoinPlayerResult.GameStarted)
-            this.State.EmptyRoomIds.Remove(room.GetPrimaryKey());
+        if (joinPlayerResult is { IsSuccess: true, Status: GameStatus.Started })
+            this.State.EmptyRoomIds.Remove(joinPlayerResult.RoomId);
 
         return joinPlayerResult;
     }
