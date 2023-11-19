@@ -3,8 +3,8 @@
     public enum CardTypes
     {
         Hearts = 1,
+        Spades,
         Diamonds,
-        Clubs,
-        Spades
+        Clubs
     }
 }

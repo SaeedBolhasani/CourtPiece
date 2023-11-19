@@ -38,13 +38,17 @@ public partial class MainView : ContentView, IDisposable
             Dispatcher.Dispatch(() =>
             {
                 MessageLabel.Text = message;
+                var d = this.Images.Children.Cast<ImageButton>().FirstOrDefault(i => i.StyleId == message);
+
+                if (d != null)
+                    this.Images.Children.Remove(d);
             });
         };
     }
 
     private void DisplayCards(Card[] cards)
     {
-        foreach (var card in cards)
+        foreach (var card in cards.OrderBy(i=>i.Type).ThenBy(i=>i.Value))
         {
             var i = new ImageButton();
             i.BatchBegin();

@@ -2,7 +2,7 @@
 
 namespace CourtPiece.Common.Model
 {
-    public interface ICard:IEquatable<ICard>
+    public interface ICard : IEquatable<ICard>, IComparable<ICard>
     {
         CardTypes Type { get; }
         byte Value { get; }
@@ -27,7 +27,6 @@ namespace CourtPiece.Common.Model
             return value.ToString();
         }
 
-
         public override string ToString()
         {
             return $"{Type}_{Value}";
@@ -41,7 +40,7 @@ namespace CourtPiece.Common.Model
         public override bool Equals(object obj)
         {
             if (obj is null) return false;
-            if(obj is Card card)
+            if (obj is Card card)
             {
                 return card.Type == Type && card.Value == Value;
             }
@@ -52,6 +51,14 @@ namespace CourtPiece.Common.Model
         public bool Equals(ICard other)
         {
             return Equals(other as object);
+        }
+
+        public int CompareTo(ICard other)
+        {
+            if (Value == 1) return 1;
+            if (other.Value == 1) return -1;
+
+            return Value.CompareTo(other.Value);
         }
     }
 }

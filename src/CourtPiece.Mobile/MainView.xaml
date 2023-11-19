@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="CourtPiece.Mobile.MainView"             >
+             x:Class="CourtPiece.Mobile.MainView"     
+             MaximumWidthRequest="400">
     <ScrollView>
         <VerticalStackLayout   >
             <ScrollView>
-                <FlexLayout Wrap="Wrap"  x:Name="Images"  MaximumWidthRequest="500" AlignItems="Center" >
+                <FlexLayout Wrap="Wrap"  x:Name="Images"  MaximumWidthRequest="400" AlignItems="Center" >
 
                 </FlexLayout>
             </ScrollView>

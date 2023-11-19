@@ -46,6 +46,14 @@ namespace CourtPiece.Mobile
                 OnCardReceived?.Invoke(this, i);
                Console.WriteLine(i);
             });
+
+            hubConnection.On<Card>("CardPlayed", i =>
+            {
+                this.OnMessageReceived?.Invoke(this, i.ToString());
+                Console.WriteLine(i);
+            });
+
+            
             hubConnection.On<string>("Room", i =>
             {
                 this.OnMessageReceived?.Invoke(this, i);
@@ -82,6 +90,7 @@ namespace CourtPiece.Mobile
             {
                 Console.WriteLine(i);
             });
+
 
 
             hubConnection.Closed += HubConnection_Closed;

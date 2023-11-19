@@ -7,11 +7,12 @@ public class RoomState
     public List<Hand> PlayedHands { get; set; } = new();
 
     public Hand CurrentHand { get; set; } = new();
+    public bool IsFinished { get; internal set; }
 }
 
 public class Trick
 {
-    public long TurnId { get; set; }
+    public long? TurnId { get; set; }
 
     public CardTypes? OriginalSuit { get; set; }
 
@@ -22,7 +23,7 @@ public class Hand
 {
     public int Number { get; set; }
 
-    public long TurnId { get; set; }
+    //public long TurnId { get; set; }
     public long TrumpCaller { get; set; }
 
     public Dictionary<long, List<ICard>> PlayerCards { get; set; } = new();
