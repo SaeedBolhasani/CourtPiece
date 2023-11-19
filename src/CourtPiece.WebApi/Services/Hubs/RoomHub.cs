@@ -19,7 +19,7 @@ public class RoomHub : Hub
     public async Task Join(Guid roomId, IGrainFactory grainFactory)
     {
         try
-        {
+        {            
             int userId = GetUserId();
             var roomManager = GetRoomManager(grainFactory);
             var result = await roomManager.JoinToRoom(roomId, grainFactory.GetGrain<IPlayer>(userId));

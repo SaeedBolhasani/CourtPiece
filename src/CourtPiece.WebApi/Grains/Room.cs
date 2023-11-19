@@ -11,19 +11,25 @@ public class Room : Grain<RoomState>, IRoom
 
     public async Task Action(Immutable<ICard> card, IPlayer player)
     {
-        if (player.GetPrimaryKeyLong() != this.State.TurnId || this.State.TrumpSuit == null)
+        if (player.GetPrimaryKeyLong() != this.State.CurrentHand.TurnId || this.State.CurrentHand.TrumpSuit == null)
         {
-            await this.playerHub.Clients.User(State.TrumpCaller.ToString()).SendAsync("Error", "It is not Your Turn.");
+            await this.playerHub.Clients.User(player.GetPrimaryKeyLong().ToString()).SendAsync("Error", "It is not Your Turn.");
             return;
         }
 
-        if (this.State.PlayerCards[player.GetPrimaryKeyLong()].Contains(card.Value))
+        if (this.State.CurrentHand.PlayerCards[player.GetPrimaryKeyLong()].Contains(card.Value))
         {
-            await this.playerHub.Clients.User(State.TrumpCaller.ToString()).SendAsync("Error", "You have not this card.");
+            await this.playerHub.Clients.User(player.GetPrimaryKeyLong().ToString()).SendAsync("Error", "You have not this card.");
             return;
         }
 
-        this.State.CurrentTricks.Add(card.Value);
+
+        this.State.CurrentHand.CurrentTrick.Cards.Add(player.GetPrimaryKeyLong(), card.Value);
+        if(this.State.CurrentHand.CurrentTrick.OriginalSuit is null)
+        {
+            this.State.CurrentHand.CurrentTrick.OriginalSuit = card.Value.Type;
+        }
+        
 
         if (this.State.CurrentTricks.Count == 4)
         {
@@ -55,17 +61,17 @@ public class Room : Grain<RoomState>, IRoom
 
         if (this.State.PlayerIds.Count == 4)
         {
-            State.TurnId = State.PlayerIds[0];
-            State.TrumpCaller = State.PlayerIds[0];
+            State.CurrentHand.TurnId = State.PlayerIds[0];
+            State.CurrentHand.TrumpCaller = State.PlayerIds[0];
 
             var cards = GetCards().Chunk(13).ToArray();
             var i = 0;
             foreach (var item in State.PlayerIds)
             {
-                this.State.PlayerCards.Add((item, cards[i].ToList()));
+                this.State.CurrentHand.PlayerCards.Add(item, cards[i].ToList());
                 i++;
             }
-            await this.playerHub.Clients.User(State.TrumpCaller.ToString()).SendAsync("ChooseTrumpSuit", cards[0].Take(5).ToArray());
+            await this.playerHub.Clients.User(State.CurrentHand.TurnId.ToString()).SendAsync("ChooseTrumpSuit", cards[0].Take(5).ToArray());
 
             return JoinPlayerResult.GameStarted(this.GetPrimaryKey());
         }
@@ -76,16 +82,16 @@ public class Room : Grain<RoomState>, IRoom
 
     public async Task ChooseTrumpSuit(CardTypes trumpSuit, IPlayer player)
     {
-        if (player.GetPrimaryKeyLong() != this.State.TurnId || player.GetPrimaryKeyLong() != this.State.TrumpCaller || this.State.TrumpSuit != null)
+        if (player.GetPrimaryKeyLong() != this.State.CurrentHand.TurnId || player.GetPrimaryKeyLong() != this.State.CurrentHand.TrumpCaller || this.State.CurrentHand.TrumpSuit != null)
         {
-            await this.playerHub.Clients.User(State.TrumpCaller.ToString()).SendAsync("Error", "It is not Your Turn.");
+            await this.playerHub.Clients.User(State.CurrentHand.TrumpCaller.ToString()).SendAsync("Error", "It is not Your Turn.");
             return;
         }
 
-        this.State.TrumpSuit = trumpSuit;
+        this.State.CurrentHand.TrumpSuit = trumpSuit;
         await this.playerHub.Clients.Group(this.GetPrimaryKey().ToString()).SendAsync("TrumpSuit", trumpSuit);
         
-        foreach (var (playerId,cards) in State.PlayerCards)
+        foreach (var (playerId,cards) in State.CurrentHand.PlayerCards)
         {
             await this.playerHub.Clients.User(playerId.ToString()).SendAsync("Cards", cards);
         }
@@ -108,7 +114,7 @@ public class Room : Grain<RoomState>, IRoom
     // 8♥ 
 
 
-    private static Card[] GetCards()
+    private static ICard[] GetCards()
     {
         var cards = new Card[52];
 
