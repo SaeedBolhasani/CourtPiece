@@ -4,6 +4,10 @@ public class RoomState
 {
     public List<long> PlayerIds { get; set; } = new();
 
+    public List<long> FirstTeamPlayerIds { get; set; } = new();
+
+    public List<long> SecondTeamPlayerIds { get; set; } = new();
+
     public List<Hand> PlayedHands { get; set; } = new();
 
     public Hand CurrentHand { get; set; } = new();
@@ -23,7 +27,6 @@ public class Hand
 {
     public int Number { get; set; }
 
-    //public long TurnId { get; set; }
     public long TrumpCaller { get; set; }
 
     public Dictionary<long, List<ICard>> PlayerCards { get; set; } = new();

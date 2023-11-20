@@ -1,4 +1,5 @@
-﻿using ManagedCode.Orleans.SignalR.Core.Config;
+﻿using CourtPiece.WebApi.Grains;
+using ManagedCode.Orleans.SignalR.Core.Config;
 using ManagedCode.Orleans.SignalR.Server.Extensions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -14,12 +15,9 @@ namespace CourtPiece.WebApi
         {
             return host.UseOrleans(siloBuilder =>
             {
-
                  siloBuilder.UseLocalhostClustering();
-
-                 //siloBuilder.AddMemoryStreams("test").AddMemoryGrainStorage("PubSubStore");
-
-                 siloBuilder.AddFileGrainStorage("File");
+                
+                 siloBuilder.AddFileGrainStorage(StorageNames.DefaultEFStorageName);
 
                  siloBuilder.Configure<GrainCollectionOptions>(i =>
                  {
@@ -61,7 +59,7 @@ namespace CourtPiece.WebApi
                     ValidAudience = configuration["JWTKey:ValidAudience"],
                     ValidIssuer = configuration["JWTKey:ValidIssuer"],
                     ClockSkew = TimeSpan.Zero,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JWTKey:Secret"]))
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JWTKey:Secret"]!))
                 };
             });
             return services;

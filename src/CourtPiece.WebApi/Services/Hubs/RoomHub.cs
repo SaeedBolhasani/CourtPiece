@@ -1,4 +1,5 @@
 ﻿using CourtPiece.Common.Model;
+using CourtPiece.WebApi.Grains;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Orleans;
@@ -86,7 +87,7 @@ public class RoomHub : Hub
 
     private static IRoomManager GetRoomManager(IGrainFactory grainFactory)
     {
-        return grainFactory.GetGrain<IRoomManager>(0);
+        return grainFactory.GetGrain<IRoomManager>(DefaultGrainId.RoomManagerId);
     }
 
     private int GetUserId()

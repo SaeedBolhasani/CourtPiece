@@ -1,11 +1,12 @@
 ﻿using CourtPiece.Common.Model;
+using CourtPiece.WebApi.Grains;
 using Orleans.Providers;
-using Orleans.Streams;
 
-[StorageProvider(ProviderName = "File")]
+[StorageProvider(ProviderName = StorageNames.DefaultEFStorageName)]
+
 public class Player : Grain, IPlayer
 {
-   
+
     public Task Action(Card card)
     {
         return Task.CompletedTask;
@@ -14,9 +15,9 @@ public class Player : Grain, IPlayer
 
     public async Task Join(IRoom room)
     {
-       // await room.AddPlayer(this);
+        // await room.AddPlayer(this);
     }
-   
+
 
 
 }

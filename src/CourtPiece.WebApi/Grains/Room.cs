@@ -1,13 +1,18 @@
 ﻿using CourtPiece.Common.Model;
+using CourtPiece.WebApi.Grains;
 using Microsoft.AspNetCore.SignalR;
 using Orleans.Concurrency;
 using Orleans.Providers;
-using Orleans.Runtime;
 
-[StorageProvider(ProviderName = "File")]
+[StorageProvider(ProviderName = StorageNames.DefaultEFStorageName)]
 public class Room : Grain<RoomState>, IRoom
 {
-    private IHubContext<RoomHub> playerHub;
+    private readonly IHubContext<RoomHub> hubContext;
+
+    public Room(IHubContext<RoomHub> hubContext)
+    {
+        this.hubContext = hubContext;
+    }
 
     public async Task Action(Immutable<ICard> card, IPlayer player)
     {
@@ -15,22 +20,21 @@ public class Room : Grain<RoomState>, IRoom
 
         if (State.IsFinished)
         {
-            await this.playerHub.Clients.User(playerId.ToString()).SendAsync("Error", "Gave is over!");
+            await SendMessageToPlayer(playerId, "Error", "Game is over!");
             return;
         }
 
+        var currentHand = this.State.CurrentHand;
 
-        Hand currentHand = this.State.CurrentHand;
-
-        if (playerId != currentHand.CurrentTrick.TurnId || currentHand.TrumpSuit == null)
+        if (IsPlayerTurn() == false)
         {
-            await this.playerHub.Clients.User(playerId.ToString()).SendAsync("Error", "It is not Your Turn.");
+            await SendMessageToPlayer(playerId, "Error", "It is not Your Turn.");
             return;
         }
 
-        if (!currentHand.PlayerCards[playerId].Contains(card.Value))
+        if (HasPlayerThisCard() == false)
         {
-            await this.playerHub.Clients.User(playerId.ToString()).SendAsync("Error", "You have not this card.");
+            await SendMessageToPlayer(playerId, "Error", "You have not this card.");
             return;
         }
 
@@ -39,19 +43,18 @@ public class Room : Grain<RoomState>, IRoom
             currentHand.CurrentTrick.OriginalSuit = card.Value.Type;
         }
 
-        if (currentHand.CurrentTrick.OriginalSuit != card.Value.Type && currentHand.PlayerCards[playerId].Any(i => i.Type == currentHand.CurrentTrick.OriginalSuit))
+        if (CanPlayThisCard() == false)
         {
-            await this.playerHub.Clients.User(playerId.ToString()).SendAsync("Error", "You can not play this card.");
+            await SendMessageToPlayer(playerId, "Error", "You can not play this card.");
             return;
         }
 
         currentHand.PlayerCards[playerId].Remove(card.Value);
-
         currentHand.CurrentTrick.Cards.Add(playerId, card.Value);
 
-        await this.playerHub.Clients.Group(this.GetPrimaryKey().ToString()).SendAsync("CardPlayed", card.Value);
+        await SendMessageToRoom("CardPlayed", card.Value);
 
-        if (currentHand.CurrentTrick.Cards.Count == 4)
+        if (IsCurrentTrickCompleted())
         {
             var cards = currentHand.CurrentTrick.Cards;
 
@@ -65,7 +68,7 @@ public class Room : Grain<RoomState>, IRoom
                 winnerId = maxTrumpSuitValue.Key;
             }
 
-            if (winnerId == State.PlayerIds[0] || winnerId == State.PlayerIds[2])
+            if (State.FirstTeamPlayerIds.Contains(winnerId))
                 currentHand.FirstTeamTricks.Add(currentHand.CurrentTrick);
             else
                 currentHand.SecondTeamTricks.Add(currentHand.CurrentTrick);
@@ -73,49 +76,75 @@ public class Room : Grain<RoomState>, IRoom
             currentHand.CurrentTrick = new Trick();
             currentHand.CurrentTrick.TurnId = winnerId;
 
+            var oldTrumpCallerIndex = State.PlayerIds.IndexOf(State.CurrentHand.TrumpCaller);
+            var newTrumpCallerIndex = oldTrumpCallerIndex;
+
+            bool handIsFinished = false;
             if (currentHand.FirstTeamTricks.Count == 7)
             {
                 currentHand.Winner = Winner.FirstTeam;
                 State.PlayedHands.Add(currentHand);
 
-                var oldTrumpCallerIndex = State.PlayerIds.IndexOf(State.CurrentHand.TrumpCaller);
-                var newTrumpCallerIndex = oldTrumpCallerIndex == 0 || oldTrumpCallerIndex == 2 ? oldTrumpCallerIndex : (oldTrumpCallerIndex + 1) % 4;
-
-                State.CurrentHand = new();
-                State.CurrentHand.TrumpCaller =State.PlayerIds[newTrumpCallerIndex];
-                await StartGame();
-
+                newTrumpCallerIndex = oldTrumpCallerIndex == 0 || oldTrumpCallerIndex == 2 ? oldTrumpCallerIndex : (oldTrumpCallerIndex + 1) % 4;
+                handIsFinished = true;
+                await SendMessageToRoom("HandWinner", "Team 1 won this hand!");
             }
             else if (currentHand.SecondTeamTricks.Count == 7)
             {
                 currentHand.Winner = Winner.SecondTeam;
                 State.PlayedHands.Add(currentHand);
 
-                var oldTrumpCallerIndex = State.PlayerIds.IndexOf(State.CurrentHand.TrumpCaller);
-                var newTrumpCallerIndex = oldTrumpCallerIndex == 1 || oldTrumpCallerIndex == 3 ? oldTrumpCallerIndex : (oldTrumpCallerIndex + 1) % 4;
-
-                State.CurrentHand = new();
-                State.CurrentHand.TrumpCaller = State.PlayerIds[newTrumpCallerIndex];
-                await StartGame();
+                newTrumpCallerIndex = oldTrumpCallerIndex == 1 || oldTrumpCallerIndex == 3 ? oldTrumpCallerIndex : (oldTrumpCallerIndex + 1) % 4;
+                handIsFinished = true;
+                await SendMessageToRoom("HandWinner", "Team 2 won this hand!");
             }
 
             if (State.PlayedHands.Count(i => i.Winner == Winner.FirstTeam) == 7)
             {
                 State.IsFinished = true;
-                // Message
+                await SendMessageToRoom("GameWinner", "Team 1 won this game!");
+                return;
             }
             else if (State.PlayedHands.Count(i => i.Winner == Winner.SecondTeam) == 7)
             {
                 State.IsFinished = true;
-                // Message
+                await SendMessageToRoom("GameWinner", "Team 2 won this game!");
+                return;
             }
 
+            if (handIsFinished)
+            {
+                State.CurrentHand = new();
+                State.CurrentHand.TrumpCaller = State.PlayerIds[newTrumpCallerIndex];
+                await StartGame();
+            }
         }
         else
         {
             var nextPlayerIndex = State.PlayerIds.IndexOf(currentHand.CurrentTrick.TurnId!.Value);
             nextPlayerIndex = (nextPlayerIndex + 1) % 4;
             currentHand.CurrentTrick.TurnId = State.PlayerIds[nextPlayerIndex];
+        }
+
+
+        bool IsPlayerTurn()
+        {
+            return playerId == currentHand.CurrentTrick.TurnId && currentHand.TrumpSuit != null;
+        }
+
+        bool HasPlayerThisCard()
+        {
+            return currentHand.PlayerCards[playerId].Contains(card.Value);
+        }
+
+        bool CanPlayThisCard()
+        {
+            return currentHand.CurrentTrick.OriginalSuit == card.Value.Type || currentHand.PlayerCards[playerId].Exists(i => i.Type == currentHand.CurrentTrick.OriginalSuit) == false;
+        }
+
+        bool IsCurrentTrickCompleted()
+        {
+            return currentHand.CurrentTrick.Cards.Count == 4;
         }
     }
 
@@ -133,15 +162,23 @@ public class Room : Grain<RoomState>, IRoom
             return JoinPlayerResult.Error("User has been joined already!", this.GetPrimaryKey());
         }
 
-        await this.playerHub.Clients.Group(this.GetPrimaryKey().ToString()).SendAsync("Room", "User Joined " + userId);
-        this.State.PlayerIds.Add(userId);
-        await this.playerHub.Clients.User(userId.ToString()).SendAsync("YouJoined", this.GetPrimaryKey());
+        await SendMessageToRoom("Room", "User Joined " + userId);
+
+        State.PlayerIds.Add(userId);
+        await SendMessageToRoom("YouJoined", this.GetPrimaryKey());
 
 
         if (this.State.PlayerIds.Count == 4)
         {
             State.CurrentHand.CurrentTrick.TurnId = State.PlayerIds[0];
             State.CurrentHand.TrumpCaller = State.PlayerIds[0];
+
+            State.FirstTeamPlayerIds.Add(State.PlayerIds[0]);
+            State.FirstTeamPlayerIds.Add(State.PlayerIds[2]);
+
+            State.SecondTeamPlayerIds.Add(State.PlayerIds[1]);
+            State.SecondTeamPlayerIds.Add(State.PlayerIds[3]);
+
             await StartGame();
 
             return JoinPlayerResult.GameStarted(this.GetPrimaryKey());
@@ -150,39 +187,47 @@ public class Room : Grain<RoomState>, IRoom
         return JoinPlayerResult.Success(this.GetPrimaryKey());
     }
 
+    private async Task SendMessageToPlayer<T>(long playerId, string methodName, T message)
+    {
+        await this.hubContext.Clients.User(playerId.ToString()).SendAsync(methodName, message);
+    }
+
+    private async Task SendMessageToRoom<T>(string methodName, T message)
+    {
+        await this.hubContext.Clients.Group(this.GetPrimaryKey().ToString()).SendAsync(methodName, message);
+    }
+
     private async Task StartGame()
     {
         var cards = GetCards().Chunk(13).ToArray();
         var i = 0;
         foreach (var item in State.PlayerIds)
         {
-            this.State.CurrentHand.PlayerCards.Add(item, cards[i].ToList());
+            State.CurrentHand.PlayerCards.Add(item, cards[i].ToList());
             i++;
         }
-        await this.playerHub.Clients.User(State.CurrentHand.CurrentTrick.TurnId.Value.ToString()).SendAsync("ChooseTrumpSuit", cards[0].Take(5).ToArray());
+        await SendMessageToPlayer(State.CurrentHand.CurrentTrick.TurnId!.Value, "ChooseTrumpSuit", cards[0].Take(5).ToArray());
     }
 
     public async Task ChooseTrumpSuit(CardTypes trumpSuit, IPlayer player)
     {
         if (player.GetPrimaryKeyLong() != this.State.CurrentHand.CurrentTrick.TurnId || player.GetPrimaryKeyLong() != this.State.CurrentHand.TrumpCaller || this.State.CurrentHand.TrumpSuit != null)
         {
-            await this.playerHub.Clients.User(State.CurrentHand.TrumpCaller.ToString()).SendAsync("Error", "It is not Your Turn.");
+            await SendMessageToPlayer(State.CurrentHand.TrumpCaller, "Error", "It is not Your Turn.");
             return;
         }
 
         this.State.CurrentHand.TrumpSuit = trumpSuit;
-        await this.playerHub.Clients.Group(this.GetPrimaryKey().ToString()).SendAsync("TrumpSuit", trumpSuit);
+        await SendMessageToRoom("TrumpSuit", trumpSuit);
 
         foreach (var (playerId, cards) in State.CurrentHand.PlayerCards)
         {
-            await this.playerHub.Clients.User(playerId.ToString()).SendAsync("Cards", cards);
+            await SendMessageToPlayer(playerId, "Cards", cards);
         }
     }
 
-
     public override async Task OnActivateAsync(CancellationToken cancellationToken)
     {
-        this.playerHub = this.ServiceProvider.GetRequiredService<IHubContext<RoomHub>>();
         await ReadStateAsync();
         await base.OnActivateAsync(cancellationToken);
     }

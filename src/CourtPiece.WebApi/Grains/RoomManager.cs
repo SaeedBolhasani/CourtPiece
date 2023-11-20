@@ -1,6 +1,7 @@
-﻿using Orleans.Providers;
+﻿using CourtPiece.WebApi.Grains;
+using Orleans.Providers;
 
-[StorageProvider(ProviderName = "File")]
+[StorageProvider(ProviderName = StorageNames.DefaultEFStorageName)]
 public class RoomManager : Grain<RoomManagerState>, IRoomManager
 {
     public async Task<JoinPlayerResult> JoinToNewRoom(IPlayer player)
@@ -26,7 +27,6 @@ public class RoomManager : Grain<RoomManagerState>, IRoomManager
             joinPlayerResult = await JoinToRoom(this.State.EmptyRoomIds.First(), player);
         else
             joinPlayerResult = await JoinToNewRoom(player);
-       
 
         if (joinPlayerResult is { IsSuccess: true, Status: GameStatus.Started })
             this.State.EmptyRoomIds.Remove(joinPlayerResult.RoomId);
