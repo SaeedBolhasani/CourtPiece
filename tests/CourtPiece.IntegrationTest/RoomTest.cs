@@ -69,10 +69,7 @@ namespace CourtPiece.IntegrationTest
             var t4 = Task.Run(p4.JoinRandomRoom);
 
             await t1;
-            Task.WaitAll(t2, t3, t4);
-
-            Thread.Sleep(TimeSpan.FromMinutes(7));
-            //semaphore.WaitOne();
+            Task.WaitAll(t2, t3, t4);         
         }
 
 

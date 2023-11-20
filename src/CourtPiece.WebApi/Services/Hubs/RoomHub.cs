@@ -1,10 +1,7 @@
 ﻿using CourtPiece.Common.Model;
-using CourtPiece.WebApi.Grains;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
-using Orleans;
 using Orleans.Concurrency;
-using Orleans.Runtime;
 using System.Security.Claims;
 
 [Authorize]
@@ -16,11 +13,11 @@ public class RoomHub : Hub
     {
         this.logger = logger;
     }
-    
+
     public async Task Join(Guid roomId, IGrainFactory grainFactory)
     {
         try
-        {            
+        {
             int userId = GetUserId();
             var roomManager = GetRoomManager(grainFactory);
             var result = await roomManager.JoinToRoom(roomId, grainFactory.GetGrain<IPlayer>(userId));
@@ -42,7 +39,7 @@ public class RoomHub : Hub
     public async Task JoinToRandomRoom(IGrainFactory grainFactory)
     {
         try
-        {            
+        {
             int userId = GetUserId();
             var roomManager = GetRoomManager(grainFactory);
             var result = await roomManager.JoinToRandomRoom(grainFactory.GetGrain<IPlayer>(userId));
@@ -68,7 +65,7 @@ public class RoomHub : Hub
             int userId = GetUserId();
             var room = grainFactory.GetGrain<IRoom>(roomId);
             await room.ChooseTrumpSuit(cardType, grainFactory.GetGrain<IPlayer>(userId));
-           
+
         }
         catch (Exception ex)
         {

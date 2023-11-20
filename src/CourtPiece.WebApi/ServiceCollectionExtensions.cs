@@ -1,5 +1,4 @@
-﻿using CourtPiece.WebApi.Grains;
-using ManagedCode.Orleans.SignalR.Core.Config;
+﻿using ManagedCode.Orleans.SignalR.Core.Config;
 using ManagedCode.Orleans.SignalR.Server.Extensions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -15,23 +14,25 @@ namespace CourtPiece.WebApi
         {
             return host.UseOrleans(siloBuilder =>
             {
-                 siloBuilder.UseLocalhostClustering();
-                
-                 siloBuilder.AddFileGrainStorage(StorageNames.DefaultEFStorageName);
+                siloBuilder.UseLocalhostClustering();
 
-                 siloBuilder.Configure<GrainCollectionOptions>(i =>
-                 {
-                     i.CollectionQuantum = TimeSpan.FromSeconds(10);
-                     i.CollectionAge = TimeSpan.FromSeconds(20);
-                     i.ClassSpecificCollectionAge.Add(nameof(RoomManager),TimeSpan.FromMinutes(5));
-                 });
+                siloBuilder.AddFileGrainStorage(StorageNames.DefaultEFStorageName);
 
-                 siloBuilder.ConfigureOrleansSignalR();
-                 siloBuilder.AddMemoryGrainStorage(OrleansSignalROptions.OrleansSignalRStorage);
-                 siloBuilder.Services
-                 .AddSignalR()
-                 .AddOrleans();
-             });
+                siloBuilder.Configure<GrainCollectionOptions>(i =>
+                {
+                    i.CollectionQuantum = TimeSpan.FromSeconds(10);
+                    i.CollectionAge = TimeSpan.FromSeconds(20);
+                    i.ClassSpecificCollectionAge.Add(nameof(RoomManager), TimeSpan.FromMinutes(5));
+                });
+
+                siloBuilder.ConfigureOrleansSignalR();
+                siloBuilder.AddMemoryGrainStorage(OrleansSignalROptions.OrleansSignalRStorage);
+                siloBuilder.Services
+                .AddSignalR()
+                .AddOrleans();
+
+                siloBuilder.Services.AddSingleton<ICardProvider, CardProvider>();
+            });
         }
 
         public static IServiceCollection ConfigureIdentity(this IServiceCollection services, IConfiguration configuration)

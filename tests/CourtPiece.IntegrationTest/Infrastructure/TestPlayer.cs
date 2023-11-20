@@ -13,10 +13,10 @@ namespace CourtPiece.IntegrationTest.Infrastructure
         private readonly TestingWebAppFactory<Program> testingWebAppFactory;
         private HubConnection connection;
         private SemaphoreSlim semaphore;
-        private bool disposedValue;
         private const string Password = "Ab@123456";
 
         public Card[] Cards { get; private set; }
+        public string Error { get; private set; }
 
         public TestPlayer(TestingWebAppFactory<Program> testingWebAppFactory, SemaphoreSlim semaphore)
         {
@@ -55,10 +55,47 @@ namespace CourtPiece.IntegrationTest.Infrastructure
             })
             .Build();
 
-            connection.On<Card[]>("Game", cards =>
+            connection.On<List<Card>>(HubMethodNames.ChooseTrumpSuit, cards =>
             {
                 this.Cards = cards.OrderBy(i => i.Type).ThenBy(i => i.Value).ToArray();
                 semaphore.Release();
+            });
+
+            connection.On<string>(HubMethodNames.Error, error =>
+            {
+               Error = error;
+            });
+
+            connection.On<Card>(HubMethodNames.CardPlayed, error =>
+            {
+                Error = error;
+            });
+
+            connection.On<string>(HubMethodNames.YouJoined, error =>
+            {
+                Error = error;
+            });
+
+            connection.On<string>(HubMethodNames.Room, error =>
+            {
+                Error = error;
+            });
+            connection.On<string>(HubMethodNames.TrumpSuit, error =>
+            {
+                Error = error;
+            });
+            connection.On<string>(HubMethodNames.GameWinner, error =>
+            {
+                Error = error;
+            });
+            connection.On<string>(HubMethodNames.HandWinner, error =>
+            {
+                Error = error;
+            });
+
+            connection.On<string>(HubMethodNames.Cards, error =>
+            {
+                Error = error;
             });
 
             await connection.StartAsync();

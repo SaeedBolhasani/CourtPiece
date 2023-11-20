@@ -21,7 +21,7 @@ namespace CourtPiece.Mobile
             httpClient.BaseAddress = new Uri("http://localhost:5182/");
         }
         public event EventHandler<Card[]> OnCardReceived;
-        internal async Task Join(int id, Guid roomId)
+        internal async Task Join(int id)
         {
             //if (this.hubConnection != null) return;
 

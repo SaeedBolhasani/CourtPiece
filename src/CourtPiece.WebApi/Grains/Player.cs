@@ -1,5 +1,4 @@
 ﻿using CourtPiece.Common.Model;
-using CourtPiece.WebApi.Grains;
 using Orleans.Providers;
 
 [StorageProvider(ProviderName = StorageNames.DefaultEFStorageName)]

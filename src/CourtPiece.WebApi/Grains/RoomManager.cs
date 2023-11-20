@@ -1,5 +1,4 @@
-﻿using CourtPiece.WebApi.Grains;
-using Orleans.Providers;
+﻿using Orleans.Providers;
 
 [StorageProvider(ProviderName = StorageNames.DefaultEFStorageName)]
 public class RoomManager : Grain<RoomManagerState>, IRoomManager

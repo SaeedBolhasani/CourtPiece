@@ -70,7 +70,7 @@ public partial class MainView : ContentView, IDisposable
     }
     private async void OnCounterClicked(object sender, EventArgs e)
     {
-        await playerService.Join(int.Parse(NameEntry.Text), GetRoomId());
+        await playerService.Join(int.Parse(NameEntry.Text));
     }
 
     private void GuidButton_Clicked(object sender, EventArgs e)
