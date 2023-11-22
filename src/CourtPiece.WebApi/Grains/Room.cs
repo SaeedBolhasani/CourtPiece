@@ -168,7 +168,8 @@ public class Room : Grain<RoomState>, IRoom
             return JoinPlayerResult.Error("User has been joined already!", this.GetPrimaryKey());
         }
 
-        await SendMessageToRoom(HubMethodNames.Room, "User Joined " + playerId);
+        var username = await player.GetFullName();
+        await SendMessageToRoom(HubMethodNames.Room, "User Joined " + username);
 
         State.PlayerIds.Add(playerId);
         await SendMessageToPlayer(playerId, HubMethodNames.YouJoined, this.GetPrimaryKey());

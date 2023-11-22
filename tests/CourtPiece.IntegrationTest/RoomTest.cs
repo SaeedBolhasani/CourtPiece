@@ -1,7 +1,7 @@
-﻿using CourtPiece.IntegrationTest.Infrastructure;
-using Microsoft.AspNetCore.SignalR;
+﻿using CourtPiece.Common.Model;
+using CourtPiece.IntegrationTest.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
-using System.Threading;
+using Moq;
 using Orleans.Streams;
 
 namespace CourtPiece.IntegrationTest
@@ -9,10 +9,12 @@ namespace CourtPiece.IntegrationTest
     public class RoomTest : IClassFixture<TestingWebAppFactory<Program>>
     {
         private readonly TestingWebAppFactory<Program> testingWebAppFactory;
+        private readonly Mock<ICardProvider> mockCardProvider;
 
         public RoomTest(TestingWebAppFactory<Program> testingWebAppFactory)
         {
             this.testingWebAppFactory = testingWebAppFactory;
+            this.mockCardProvider = testingWebAppFactory.Services.GetRequiredService<Mock<ICardProvider>>();
         }
 
         [Fact]
@@ -40,14 +42,16 @@ namespace CourtPiece.IntegrationTest
             var t4 = Task.Run(() => p4.Join(roomId));
 
             await t1;
-            Task.WaitAll(t2, t3, t4);         
+            Task.WaitAll(t2, t3, t4);
             //semaphore.WaitOne();
         }
 
         [Fact]
         public async void Test_JoinRandomRoom()
         {
-           
+            var cards = Card.AllCards.OrderBy(i=>i.Type).ThenBy(i=>i.Value).ToArray();
+
+            this.mockCardProvider.Setup(i => i.GetCards()).Returns(cards);
 
             var semaphore = new SemaphoreSlim(0);
 
@@ -69,7 +73,7 @@ namespace CourtPiece.IntegrationTest
             var t4 = Task.Run(p4.JoinRandomRoom);
 
             await t1;
-            Task.WaitAll(t2, t3, t4);         
+            Task.WaitAll(t2, t3, t4);
         }
 
 
@@ -78,9 +82,9 @@ namespace CourtPiece.IntegrationTest
         {
             var ss = testingWebAppFactory.Services.GetRequiredService<IClusterClient>();
             var streamProvider = ss.GetStreamProvider("test");
-            await  streamProvider.GetStream<string>("test").SubscribeAsync(async i =>
+            await streamProvider.GetStream<string>("test").SubscribeAsync(async i =>
             {
-                 await Task.CompletedTask;
+                await Task.CompletedTask;
             });
             //await t6;
 

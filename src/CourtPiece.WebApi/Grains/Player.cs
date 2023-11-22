@@ -1,22 +1,21 @@
-﻿using CourtPiece.Common.Model;
-using Orleans.Providers;
+﻿using Orleans.Providers;
 
 [StorageProvider(ProviderName = StorageNames.DefaultEFStorageName)]
-
 public class Player : Grain, IPlayer
 {
+    private AppUser user;
 
-    public Task Action(Card card)
+    public Task<string> GetFullName()
     {
-        return Task.CompletedTask;
-
+        return Task.FromResult(user.UserName!);
     }
 
-    public async Task Join(IRoom room)
+    public override async Task OnActivateAsync(CancellationToken cancellationToken)
     {
-        // await room.AddPlayer(this);
+        var dbContext = this.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        this.user = (await dbContext.Users.FindAsync((int)this.GetPrimaryKeyLong(), cancellationToken))!;
+        await base.OnActivateAsync(cancellationToken);
     }
-
 
 
 }

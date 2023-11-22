@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Moq;
 
 namespace CourtPiece.IntegrationTest.Infrastructure
 {
@@ -12,13 +13,11 @@ namespace CourtPiece.IntegrationTest.Infrastructure
             builder.ConfigureServices(async services =>
             {
                 RemoveService(services, typeof(DbContextOptions<ApplicationDbContext>));
-                //RemoveService(services, typeof(OtpCreatedSubscriber));
+                RemoveService(services, typeof(CardProvider));
 
-                //var otpCreatedSubscriberMock = new Mock<IEventSubscriber<OneTimePassword>>();
-                //services.AddSingleton(otpCreatedSubscriberMock);
-                //services.AddSingleton(typeof(IEventSubscriber), otpCreatedSubscriberMock.Object);
-
-                //OtpCreatedSubscriber
+                var cardProvider = new Mock<ICardProvider>();
+                services.AddSingleton(cardProvider);
+                services.AddSingleton(typeof(ICardProvider), cardProvider.Object);
 
                 services.AddDbContext<ApplicationDbContext>(options =>
                 {

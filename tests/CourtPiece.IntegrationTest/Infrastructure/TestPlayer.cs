@@ -1,5 +1,7 @@
 ﻿using CourtPiece.Common.Model;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.SignalR.Client;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using static AuthService;
@@ -15,8 +17,13 @@ namespace CourtPiece.IntegrationTest.Infrastructure
         private SemaphoreSlim semaphore;
         private const string Password = "Ab@123456";
 
-        public Card[] Cards { get; private set; }
+        public List<Card> Cards { get; private set; }
         public string Error { get; private set; }
+        public Guid? RoomId { get; private set; }
+        public string Message { get; private set; }
+        public CardTypes TrumpSuit { get; private set; }
+        public string GameWinnerMessage { get; private set; }
+        public string HandWinner { get; private set; }
 
         public TestPlayer(TestingWebAppFactory<Program> testingWebAppFactory, SemaphoreSlim semaphore)
         {
@@ -45,19 +52,21 @@ namespace CourtPiece.IntegrationTest.Infrastructure
 
             result.EnsureSuccessStatusCode();
             var token = await result.Content.ReadAsStringAsync();
-            this.httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            var authenticationHeader = new AuthenticationHeaderValue("Bearer", token);
+            this.httpClient.DefaultRequestHeaders.Authorization = authenticationHeader;
 
             connection = new HubConnectionBuilder()
             .WithUrl("http://localhost/ChatHub", i =>
             {
-                i.Headers.Add("Authorization", "Bearer " + token);
+                i.Headers.Add("Authorization", authenticationHeader.ToString());
                 i.HttpMessageHandlerFactory = _ => this.testingWebAppFactory.Server.CreateHandler();
             })
             .Build();
 
-            connection.On<List<Card>>(HubMethodNames.ChooseTrumpSuit, cards =>
+            connection.On<Card[]>(HubMethodNames.ChooseTrumpSuit, cards =>
             {
-                this.Cards = cards.OrderBy(i => i.Type).ThenBy(i => i.Value).ToArray();
+                Cards = cards.ToList();
                 semaphore.Release();
             });
 
@@ -68,38 +77,43 @@ namespace CourtPiece.IntegrationTest.Infrastructure
 
             connection.On<Card>(HubMethodNames.CardPlayed, error =>
             {
-                Error = error;
+                
             });
 
-            connection.On<string>(HubMethodNames.YouJoined, error =>
+            connection.On<Guid>(HubMethodNames.YouJoined, roomId =>
             {
-                Error = error;
+                RoomId = roomId;
             });
 
-            connection.On<string>(HubMethodNames.Room, error =>
+            connection.On<string>(HubMethodNames.Room, message =>
             {
-                Error = error;
+                Message = message;
             });
-            connection.On<string>(HubMethodNames.TrumpSuit, error =>
+            connection.On<CardTypes>(HubMethodNames.TrumpSuit, trumpSuit =>
             {
-                Error = error;
+                TrumpSuit = trumpSuit;
             });
-            connection.On<string>(HubMethodNames.GameWinner, error =>
+            connection.On<string>(HubMethodNames.GameWinner, message =>
             {
-                Error = error;
+                GameWinnerMessage = message;
             });
-            connection.On<string>(HubMethodNames.HandWinner, error =>
+            connection.On<string>(HubMethodNames.HandWinner, message =>
             {
-                Error = error;
+                HandWinner = message;
             });
 
-            connection.On<string>(HubMethodNames.Cards, error =>
+            connection.On<List<Card>>(HubMethodNames.Cards, error =>
             {
-                Error = error;
-            });
+                Cards = error;
+            });           
 
             await connection.StartAsync();
 
+        }
+
+        private Task Connection_Closed(Exception? arg)
+        {
+            throw new NotImplementedException();
         }
 
         public async Task Join(Guid roomId)
