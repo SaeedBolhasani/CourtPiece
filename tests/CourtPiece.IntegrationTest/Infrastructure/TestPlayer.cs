@@ -16,12 +16,13 @@ namespace CourtPiece.IntegrationTest.Infrastructure
         private HubConnection connection;
         private SemaphoreSlim semaphore;
         private const string Password = "Ab@123456";
+        private readonly SemaphoreSlim trumpSuitMutex = new(0);
 
         public List<Card> Cards { get; private set; }
         public string Error { get; private set; }
         public Guid? RoomId { get; private set; }
         public string Message { get; private set; }
-        public CardTypes TrumpSuit { get; private set; }
+        public CardTypes? TrumpSuit { get; private set; }
         public string GameWinnerMessage { get; private set; }
         public string HandWinner { get; private set; }
 
@@ -31,7 +32,7 @@ namespace CourtPiece.IntegrationTest.Infrastructure
             this.testingWebAppFactory = testingWebAppFactory;
             this.semaphore = semaphore;
         }
-        
+
         public async Task Create(string name)
         {
             var result = await httpClient.PostAsJsonAsync("api/Authentication/registeration", new RegistrationModel
@@ -72,12 +73,12 @@ namespace CourtPiece.IntegrationTest.Infrastructure
 
             connection.On<string>(HubMethodNames.Error, error =>
             {
-               Error = error;
+                Error = error;
             });
 
             connection.On<Card>(HubMethodNames.CardPlayed, error =>
             {
-                
+
             });
 
             connection.On<Guid>(HubMethodNames.YouJoined, roomId =>
@@ -92,6 +93,7 @@ namespace CourtPiece.IntegrationTest.Infrastructure
             connection.On<CardTypes>(HubMethodNames.TrumpSuit, trumpSuit =>
             {
                 TrumpSuit = trumpSuit;
+                trumpSuitMutex.Release();
             });
             connection.On<string>(HubMethodNames.GameWinner, message =>
             {
@@ -105,27 +107,38 @@ namespace CourtPiece.IntegrationTest.Infrastructure
             connection.On<List<Card>>(HubMethodNames.Cards, error =>
             {
                 Cards = error;
-            });           
+            });
 
             await connection.StartAsync();
 
         }
 
-        private Task Connection_Closed(Exception? arg)
-        {
-            throw new NotImplementedException();
-        }
-
         public async Task Join(Guid roomId)
         {
-            await connection.SendAsync("join", roomId.ToString());   
+            await connection.SendAsync("join", roomId.ToString());
             semaphore.Wait();
         }
 
         public async Task JoinRandomRoom()
         {
             await connection.SendAsync("joinToRandomRoom");
+        }
+
+        public async Task JoinRandomRoomAndWait()
+        {
+            await connection.SendAsync("joinToRandomRoom");
             semaphore.Wait();
         }
-    }   
+
+        public async Task ChooseTrumpSuit(CardTypes type)
+        {
+            await connection.SendAsync("chooseTrumpSuit", type, RoomId.Value);
+        }
+
+        public void WaitForTrumpSuit()
+        {
+            if (TrumpSuit == null)
+                trumpSuitMutex.Wait();
+        }
+    }
 }
