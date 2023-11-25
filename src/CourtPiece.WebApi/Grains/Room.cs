@@ -59,9 +59,15 @@ public class Room : Grain<RoomState>, IRoom
             var winnerId = GetWinnerId(cards);
 
             if (State.FirstTeamPlayerIds.Contains(winnerId))
+            {
                 currentHand.FirstTeamTricks.Add(currentHand.CurrentTrick);
+                await SendMessageToTeam(State.FirstTeamPlayerIds, HubMethodNames.TrickWinner, currentHand.FirstTeamTricks.Count);
+            }
             else
+            {
                 currentHand.SecondTeamTricks.Add(currentHand.CurrentTrick);
+                await SendMessageToTeam(State.SecondTeamPlayerIds, HubMethodNames.TrickWinner, currentHand.SecondTeamTricks.Count);
+            }
 
             currentHand.CurrentTrick = new Trick();
             currentHand.CurrentTrick.TurnId = winnerId;
@@ -226,6 +232,14 @@ public class Room : Grain<RoomState>, IRoom
     private async Task SendMessageToPlayer<T>(long playerId, string methodName, T message)
     {
         await this.hubContext.Clients.User(playerId.ToString()).SendAsync(methodName, message);
+    }
+
+    private async Task SendMessageToTeam<T>(IEnumerable<long> playerIds, string methodName, T message)
+    {
+        foreach (var playerId in playerIds)
+        {
+            await this.hubContext.Clients.User(playerId.ToString()).SendAsync(methodName, message);
+        }
     }
 
     private async Task SendMessageToRoom<T>(string methodName, T message)

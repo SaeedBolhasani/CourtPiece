@@ -1,7 +1,5 @@
 ﻿using CourtPiece.Common.Model;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.SignalR.Client;
-using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using static AuthService;
@@ -14,9 +12,13 @@ namespace CourtPiece.IntegrationTest.Infrastructure
         private readonly HttpClient httpClient;
         private readonly TestingWebAppFactory<Program> testingWebAppFactory;
         private HubConnection connection;
-        private SemaphoreSlim semaphore;
+
+        private readonly SemaphoreSlim cardSemaphore = new(0);
+        private readonly SemaphoreSlim trumpSuitSemaphore = new(0);
+        private readonly SemaphoreSlim playCardSemaphore = new(0);
+
         private const string Password = "Ab@123456";
-        private readonly SemaphoreSlim trumpSuitMutex = new(0);
+
 
         public List<Card> Cards { get; private set; }
         public string Error { get; private set; }
@@ -26,11 +28,10 @@ namespace CourtPiece.IntegrationTest.Infrastructure
         public string GameWinnerMessage { get; private set; }
         public string HandWinner { get; private set; }
 
-        public TestPlayer(TestingWebAppFactory<Program> testingWebAppFactory, SemaphoreSlim semaphore)
+        public TestPlayer(TestingWebAppFactory<Program> testingWebAppFactory)
         {
             this.httpClient = testingWebAppFactory.CreateClient();
             this.testingWebAppFactory = testingWebAppFactory;
-            this.semaphore = semaphore;
         }
 
         public async Task Create(string name)
@@ -68,7 +69,7 @@ namespace CourtPiece.IntegrationTest.Infrastructure
             connection.On<Card[]>(HubMethodNames.ChooseTrumpSuit, cards =>
             {
                 Cards = cards.ToList();
-                semaphore.Release();
+                cardSemaphore.Release();
             });
 
             connection.On<string>(HubMethodNames.Error, error =>
@@ -76,9 +77,10 @@ namespace CourtPiece.IntegrationTest.Infrastructure
                 Error = error;
             });
 
-            connection.On<Card>(HubMethodNames.CardPlayed, error =>
+            connection.On<Card>(HubMethodNames.CardPlayed, card =>
             {
-
+                if (this.Cards.Remove(card))
+                    playCardSemaphore.Release();
             });
 
             connection.On<Guid>(HubMethodNames.YouJoined, roomId =>
@@ -93,7 +95,7 @@ namespace CourtPiece.IntegrationTest.Infrastructure
             connection.On<CardTypes>(HubMethodNames.TrumpSuit, trumpSuit =>
             {
                 TrumpSuit = trumpSuit;
-                trumpSuitMutex.Release();
+                trumpSuitSemaphore.Release();
             });
             connection.On<string>(HubMethodNames.GameWinner, message =>
             {
@@ -104,19 +106,14 @@ namespace CourtPiece.IntegrationTest.Infrastructure
                 HandWinner = message;
             });
 
-            connection.On<List<Card>>(HubMethodNames.Cards, error =>
+            connection.On<List<Card>>(HubMethodNames.Cards, cards =>
             {
-                Cards = error;
+                Cards = cards;
+                cardSemaphore.Release();
             });
 
             await connection.StartAsync();
 
-        }
-
-        public async Task Join(Guid roomId)
-        {
-            await connection.SendAsync("join", roomId.ToString());
-            semaphore.Wait();
         }
 
         public async Task JoinRandomRoom()
@@ -127,7 +124,7 @@ namespace CourtPiece.IntegrationTest.Infrastructure
         public async Task JoinRandomRoomAndWait()
         {
             await connection.SendAsync("joinToRandomRoom");
-            semaphore.Wait();
+            cardSemaphore.Wait();
         }
 
         public async Task ChooseTrumpSuit(CardTypes type)
@@ -138,7 +135,19 @@ namespace CourtPiece.IntegrationTest.Infrastructure
         public void WaitForTrumpSuit()
         {
             if (TrumpSuit == null)
-                trumpSuitMutex.Wait();
+                trumpSuitSemaphore.Wait();
+        }
+
+        public void WaitForCards()
+        {
+            if (this.Cards is { Count: 13 })
+                cardSemaphore.Wait();
+        }
+
+        public async Task PlayAndWait(Card card)
+        {
+            await connection.SendAsync("action", card, RoomId.Value);
+            playCardSemaphore.Wait();
         }
     }
 }
