@@ -59,11 +59,11 @@ public class AuthService : IAuthService
 
         var userRoles = await userManager.GetRolesAsync(user);
         var authClaims = new List<Claim>
-            {
+        {
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-               new Claim(ClaimTypes.Name, user.UserName),
-               new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            };
+            new Claim(ClaimTypes.Name, user.UserName),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+        };
 
         foreach (var userRole in userRoles)
         {
@@ -82,10 +82,10 @@ public class AuthService : IAuthService
         {
             Issuer = _configuration["JWTKey:ValidIssuer"],
             Audience = _configuration["JWTKey:ValidAudience"],
-            //Expires = DateTime.UtcNow.AddHours(_TokenExpiryTimeInHour),
-            Expires = DateTime.UtcNow.AddMinutes(1),
+            Expires = DateTime.UtcNow.AddHours(_TokenExpiryTimeInHour),
+            //Expires = DateTime.UtcNow.AddMinutes(1),
             SigningCredentials = new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256),
-            Subject = new ClaimsIdentity(claims)
+            Subject = new ClaimsIdentity(claims)           
         };
 
         var tokenHandler = new JwtSecurityTokenHandler();

@@ -3,7 +3,6 @@ using CourtPiece.IntegrationTest.Infrastructure;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
-using Orleans.Streams;
 using static CourtPiece.Common.Model.Card;
 namespace CourtPiece.IntegrationTest
 {
@@ -19,39 +18,10 @@ namespace CourtPiece.IntegrationTest
         }
 
         [Fact]
-        public async void Test()
-        {
-            //var roomId = Guid.NewGuid();
-
-            //var semaphore = new SemaphoreSlim(0);
-
-            //// Create and join 4 players
-            //var p1 = new TestPlayer(testingWebAppFactory, semaphore);
-            //await p1.Create("player1");
-            //var t1 = Task.Run(() => p1.Join(roomId));
-
-            //var p2 = new TestPlayer(testingWebAppFactory, semaphore);
-            //await p2.Create("player2");
-            //var t2 = Task.Run(() => p2.Join(roomId));
-
-            //var p3 = new TestPlayer(testingWebAppFactory, semaphore);
-            //await p3.Create("player3");
-            //var t3 = Task.Run(() => p3.Join(roomId));
-
-            //var p4 = new TestPlayer(testingWebAppFactory, semaphore);
-            //await p4.Create("player4");
-            //var t4 = Task.Run(() => p4.Join(roomId));
-
-            //await t1;
-            //Task.WaitAll(t2, t3, t4);
-            ////semaphore.WaitOne();
-        }
-
-        [Fact]
-        public async void Test_JoinRandomRoom()
+        public async void Test_Play7Hands_WinnerIsTeam2()
         {
             const CardTypes TrumpSuit = CardTypes.Hearts;
-            var turnBuilder = new TrunBuilder
+            var turnBuilder = new GameBuilder
             {
                 //player1       player2         player3     player4    next winner index
                 { HeartAce,     Heart4,         Heart2,     Heart3,       0 },
@@ -77,52 +47,88 @@ namespace CourtPiece.IntegrationTest
             // Create and join 4 players
             var p1 = new TestPlayer(testingWebAppFactory);
             await p1.Create("player1");
-            var t1 = Task.Run(p1.JoinRandomRoomAndWait);
+            await p1.JoinRandomRoomAndWait();
             allPlayers.Add(p1);
 
             var p2 = new TestPlayer(testingWebAppFactory);
             await p2.Create("player2");
-            await p2.JoinRandomRoom();
+            await p2.JoinRandomRoomAndWait();
             allPlayers.Add(p2);
 
             var p3 = new TestPlayer(testingWebAppFactory);
             await p3.Create("player3");
-            await p3.JoinRandomRoom();
+            await p3.JoinRandomRoomAndWait();
             allPlayers.Add(p3);
 
             var p4 = new TestPlayer(testingWebAppFactory);
             await p4.Create("player4");
-            await p4.JoinRandomRoom();
+            await p4.JoinRandomRoomAndWait();
             allPlayers.Add(p4);
-
-            await t1;
-
-            p1.Cards.Count.Should().Be(5);
 
             p2.RoomId.Should().Be(p1.RoomId);
             p3.RoomId.Should().Be(p1.RoomId);
-            p4.RoomId.Should().Be(p1.RoomId);
+            p4.RoomId.Should().Be(p1.RoomId);      
 
 
-            await p1.ChooseTrumpSuit(TrumpSuit);
+            foreach (var index in Enumerable.Range(0, 7))
+            {
+                await PlayHand(TrumpSuit, turnBuilder, allPlayers, index == 0 ? 0 : 1);
+
+                allPlayers.ForEach(i => i.WaitForHandWinnerAnnounce());
+                allPlayers.Should().AllSatisfy(i => i.HandWinnerMessage.Should().Be("Team 2 won this hand!"));
+            }
+
+            allPlayers.ForEach(i => i.WaitForGameWinnerAnnounce());
+            allPlayers.Should().AllSatisfy(i => i.GameWinnerMessage.Should().Be("Team 2 won this game!"));
+
+        }
+
+        private static async Task PlayHand(CardTypes TrumpSuit, GameBuilder turnBuilder, List<TestPlayer> allPlayers, int trumpCallerIndex)
+        {
+            allPlayers[trumpCallerIndex].WaitForTrumpCallerCards();
+            allPlayers[trumpCallerIndex].Cards.Count.Should().Be(5);
+
+            await allPlayers[trumpCallerIndex].ChooseTrumpSuit(TrumpSuit);
 
             allPlayers.ForEach(i => i.WaitForTrumpSuit());
             allPlayers.Should().AllSatisfy(i => i.TrumpSuit.Should().Be(TrumpSuit));
 
             allPlayers.ForEach(i => i.WaitForCards());
 
-            var winnerIndex = 0;
-            foreach (var (turnCards, nextWinnerIndex) in turnBuilder.Take(10))
+            var winnerIndex = trumpCallerIndex;
+            var firstTeamWonTrick = 0;
+            var secondTeamWonTrick = 0;
+            foreach (var (turnCards, nextWinnerIndex) in turnBuilder)
             {
                 await allPlayers[winnerIndex].PlayAndWait(turnCards[winnerIndex]);
                 await allPlayers[(winnerIndex + 1) % 4].PlayAndWait(turnCards[(winnerIndex + 1) % 4]);
                 await allPlayers[(winnerIndex + 2) % 4].PlayAndWait(turnCards[(winnerIndex + 2) % 4]);
                 await allPlayers[(winnerIndex + 3) % 4].PlayAndWait(turnCards[(winnerIndex + 3) % 4]);
+
                 winnerIndex = nextWinnerIndex;
 
-                
-            }
+                if (winnerIndex is 0 or 2)
+                {
+                    firstTeamWonTrick++;
+                    allPlayers[0].WaitForTrickWinnerAnnounce();
+                    allPlayers[0].TrickWinnerCount.Should().Be(firstTeamWonTrick);
 
+                    allPlayers[2].WaitForTrickWinnerAnnounce();
+                    allPlayers[2].TrickWinnerCount.Should().Be(firstTeamWonTrick);
+                }
+                else
+                {
+                    secondTeamWonTrick++;
+                    allPlayers[1].WaitForTrickWinnerAnnounce();
+                    allPlayers[1].TrickWinnerCount.Should().Be(secondTeamWonTrick);
+
+                    allPlayers[3].WaitForTrickWinnerAnnounce();
+                    allPlayers[3].TrickWinnerCount.Should().Be(secondTeamWonTrick);
+                }
+
+                if (firstTeamWonTrick == 7 || secondTeamWonTrick == 7)
+                    break;
+            }
         }
     }
 

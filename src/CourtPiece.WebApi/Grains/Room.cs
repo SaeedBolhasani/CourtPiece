@@ -84,6 +84,7 @@ public class Room : Grain<RoomState>, IRoom
                 newTrumpCallerIndex = oldTrumpCallerIndex == 0 || oldTrumpCallerIndex == 2 ? oldTrumpCallerIndex : newTrumpCallerIndex;
                 handIsFinished = true;
                 await SendMessageToRoom(HubMethodNames.HandWinner, "Team 1 won this hand!");
+
             }
             else if (currentHand.SecondTeamTricks.Count == 7)
             {
@@ -110,8 +111,14 @@ public class Room : Grain<RoomState>, IRoom
 
             if (handIsFinished)
             {
-                State.CurrentHand = new();
-                State.CurrentHand.TrumpCaller = State.PlayerIds[newTrumpCallerIndex];
+                State.CurrentHand = new()
+                {
+                    TrumpCaller = State.PlayerIds[newTrumpCallerIndex],
+                    CurrentTrick = new()
+                    {
+                        TurnId = State.PlayerIds[newTrumpCallerIndex] 
+                    }
+                };
                 await StartGame();
             }
         }
@@ -210,7 +217,7 @@ public class Room : Grain<RoomState>, IRoom
             State.CurrentHand.PlayerCards.Add(item, cards[i].ToList());
             i++;
         }
-        await SendMessageToPlayer(State.CurrentHand.CurrentTrick.TurnId!.Value, HubMethodNames.ChooseTrumpSuit, cards[0].Take(5).ToArray());
+        await SendMessageToPlayer(State.CurrentHand.TrumpCaller, HubMethodNames.ChooseTrumpSuit, cards[0].Take(5).ToArray());
     }
 
     public async Task ChooseTrumpSuit(CardTypes trumpSuit, IPlayer player)
@@ -238,7 +245,7 @@ public class Room : Grain<RoomState>, IRoom
     {
         foreach (var playerId in playerIds)
         {
-            await this.hubContext.Clients.User(playerId.ToString()).SendAsync(methodName, message);
+            await SendMessageToPlayer(playerId, methodName, message);
         }
     }
 
