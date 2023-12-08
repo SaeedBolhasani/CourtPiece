@@ -2,14 +2,14 @@ using CourtPiece.Common.Model;
 
 namespace CourtPiece.Mobile;
 
-public partial class MainView : ContentView, IDisposable
+public partial class BoardView : ContentView, IDisposable
 {
     private readonly IServiceScope scope;
     private readonly PlayerService playerService;
 
-     
 
-    public MainView()
+
+    public BoardView()
     {
         InitializeComponent();
 
@@ -32,7 +32,6 @@ public partial class MainView : ContentView, IDisposable
 
             DisplayCards(cards);
         };
-
         playerService.OnMessageReceived += (s, message) =>
         {
             Dispatcher.Dispatch(() =>
@@ -44,11 +43,19 @@ public partial class MainView : ContentView, IDisposable
                     this.Images.Children.Remove(d);
             });
         };
+
+        playerService.OnMyTurn += (s, e) =>
+        {
+            Dispatcher.Dispatch(() =>
+            {
+                MyTurn.IsVisible = true;
+            });
+        };
     }
 
     private void DisplayCards(Card[] cards)
     {
-        foreach (var card in cards.OrderBy(i=>i.Type).ThenBy(i=>i.Value))
+        foreach (var card in cards.OrderBy(i => i.Type).ThenBy(i => i.Value))
         {
             var i = new ImageButton();
             i.BatchBegin();
@@ -64,13 +71,10 @@ public partial class MainView : ContentView, IDisposable
             });
         }
     }
-    private Guid GetRoomId()
+
+    private async void OnJoinToRandomRoom(object sender, EventArgs e)
     {
-        return Guid.Parse(RoomEntry.Text);
-    }
-    private async void OnCounterClicked(object sender, EventArgs e)
-    {
-        await playerService.Join(int.Parse(NameEntry.Text));
+        await playerService.Join(NameEntry.Text);
     }
 
     private void GuidButton_Clicked(object sender, EventArgs e)
@@ -79,13 +83,35 @@ public partial class MainView : ContentView, IDisposable
         SemanticScreenReader.Announce(NameEntry.Text);
     }
 
+    ImageButton selectedCard = null;
     private async void ImageButton_Clicked(object sender, EventArgs e)
     {
         var button = (ImageButton)sender;
         Card card = button.StyleId;
-        //button.ScaleTo(1.2);
-        //SemanticScreenReader.Announce(button);
-        await playerService.Action(card);
+
+        if (selectedCard == null)
+        {
+            button.ScaleTo(1.2);
+            selectedCard = button;
+        }
+        else if (button != selectedCard)
+        {
+            selectedCard.ScaleTo(1);
+            selectedCard = button;
+            button.ScaleTo(1.2);
+        }
+        else
+        {
+
+            //button.ScaleTo(1.2);
+            //SemanticScreenReader.Announce(button);
+            await playerService.Action(card);
+            Dispatcher.Dispatch(() =>
+            {
+                MyTurn.IsVisible = false;
+            });
+
+        }
     }
 
     public void Dispose()

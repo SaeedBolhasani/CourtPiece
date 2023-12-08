@@ -18,7 +18,7 @@ namespace CourtPiece.IntegrationTest
         }
 
         [Fact]
-        public async void Test_Play7Hands_WinnerIsTeam2()
+        public async void Join4PlayerToOneRandomRoom_Play7Hands_WinnerIsTeam2()
         {
             const CardTypes TrumpSuit = CardTypes.Hearts;
             var turnBuilder = new GameBuilder
@@ -67,8 +67,7 @@ namespace CourtPiece.IntegrationTest
 
             p2.RoomId.Should().Be(p1.RoomId);
             p3.RoomId.Should().Be(p1.RoomId);
-            p4.RoomId.Should().Be(p1.RoomId);      
-
+            p4.RoomId.Should().Be(p1.RoomId);
 
             foreach (var index in Enumerable.Range(0, 7))
             {

@@ -116,7 +116,7 @@ public class Room : Grain<RoomState>, IRoom
                     TrumpCaller = State.PlayerIds[newTrumpCallerIndex],
                     CurrentTrick = new()
                     {
-                        TurnId = State.PlayerIds[newTrumpCallerIndex] 
+                        TurnId = State.PlayerIds[newTrumpCallerIndex]
                     }
                 };
                 await StartGame();
@@ -128,6 +128,8 @@ public class Room : Grain<RoomState>, IRoom
             nextPlayerIndex = (nextPlayerIndex + 1) % 4;
             currentHand.CurrentTrick.TurnId = State.PlayerIds[nextPlayerIndex];
         }
+
+        await SendMessageToPlayer(State.CurrentHand.CurrentTrick.TurnId!.Value, HubMethodNames.ItIsYourTurn);
 
 
         bool IsPlayerTurn()
@@ -239,6 +241,11 @@ public class Room : Grain<RoomState>, IRoom
     private async Task SendMessageToPlayer<T>(long playerId, string methodName, T message)
     {
         await this.hubContext.Clients.User(playerId.ToString()).SendAsync(methodName, message);
+    }
+
+    private async Task SendMessageToPlayer(long playerId, string methodName)
+    {
+        await this.hubContext.Clients.User(playerId.ToString()).SendAsync(methodName, null);
     }
 
     private async Task SendMessageToTeam<T>(IEnumerable<long> playerIds, string methodName, T message)

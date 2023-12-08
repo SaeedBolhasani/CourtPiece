@@ -76,10 +76,18 @@ public class RoomHub : Hub
 
     public async Task Action(Card card, Guid roomId, IGrainFactory grainFactory)
     {
-        var userId = GetUserId();
+        try
+        {
+            var userId = GetUserId();
         var player = grainFactory.GetGrain<IPlayer>(userId);
         var room = grainFactory.GetGrain<IRoom>(roomId);
         await room.Action(new Immutable<ICard>(card), player);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "An error occurred in Class: {0}, Method: {1}. User Id:{2}.", nameof(RoomHub), nameof(Action), GetUserId());
+            throw;
+        }
     }
 
     private static IRoomManager GetRoomManager(IGrainFactory grainFactory)

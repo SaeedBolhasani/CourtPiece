@@ -5,6 +5,7 @@
     <HorizontalStackLayout>
         <Button Text="Clear all" Clicked="Button_Clicked"></Button>
         <HorizontalStackLayout x:Name="Stack">
+           
         </HorizontalStackLayout>
     </HorizontalStackLayout>
 

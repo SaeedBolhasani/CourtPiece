@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="CourtPiece.Mobile.Login"
+             Title="Login">
+    <VerticalStackLayout>
+        <Entry Placeholder="Enter Your Name" x:Name="Username"></Entry>
+        <Entry Placeholder="Enter Your Password" x:Name="Password"></Entry>
+        <Button Text="Login" Clicked="LoginButton_Clicked"></Button>
+        <Button Text="I Don't Have An Account!" Clicked="RegisterButton_Clicked"></Button>
+    </VerticalStackLayout>
+</ContentPage>

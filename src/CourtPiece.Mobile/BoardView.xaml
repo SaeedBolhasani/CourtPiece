@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="CourtPiece.Mobile.MainView"     
+             x:Class="CourtPiece.Mobile.BoardView"     
              MaximumWidthRequest="400">
     <ScrollView>
         <VerticalStackLayout   >
@@ -10,21 +10,24 @@
 
                 </FlexLayout>
             </ScrollView>
-            <Button        x:Name="CounterBtn"
-        Text="Click me"
+            <Button        x:Name="JoinToRandomRoomButton"
+        Text="Join To Random Room"
         SemanticProperties.Hint="Counts the number of times you click"
-        Clicked="OnCounterClicked"
+        Clicked="OnJoinToRandomRoom"
         HorizontalOptions="Center" />
 
 
             <Label>Enter Your Name</Label>
-            <Button x:Name="GuidButton" Clicked="GuidButton_Clicked" Text="GUID"></Button>
-            <Entry x:Name="NameEntry"></Entry>
-
-            <Entry x:Name="RoomEntry" Text="0c3b1a06-7ed9-11ee-b962-0242ac120002"></Entry>
+            <Entry x:Name="NameEntry" Text="test"></Entry>
             <Label x:Name="MessageLabel"></Label>
-        </VerticalStackLayout>
+            <Border Background="Green" BackgroundColor="Green"   WidthRequest="50" HeightRequest="50" IsVisible="false" x:Name="MyTurn">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="25" />
+                </Border.StrokeShape>
+            </Border>
 
+          
+        </VerticalStackLayout>
     </ScrollView>
 
 </ContentView>

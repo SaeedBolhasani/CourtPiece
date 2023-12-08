@@ -6,8 +6,7 @@
     xmlns:local="clr-namespace:CourtPiece.Mobile"
     Shell.FlyoutBehavior="Disabled">
 
-    <ShellContent
-        Title="Home"
+    <ShellContent      
         ContentTemplate="{DataTemplate local:MainPage}"
         Route="MainPage" />
 

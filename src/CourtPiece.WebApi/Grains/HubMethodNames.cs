@@ -12,4 +12,5 @@ public class HubMethodNames
     public const string Room = nameof(Room);
     public const string YouJoined = nameof(YouJoined);
     public const string TrickWinner = nameof(TrickWinner);
+    public const string ItIsYourTurn = nameof(ItIsYourTurn);
 }

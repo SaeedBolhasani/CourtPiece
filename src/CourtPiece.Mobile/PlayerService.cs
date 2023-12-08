@@ -21,13 +21,14 @@ namespace CourtPiece.Mobile
             httpClient.BaseAddress = new Uri("http://localhost:5182/");
         }
         public event EventHandler<Card[]> OnCardReceived;
-        internal async Task Join(int id)
+        public event EventHandler OnMyTurn;
+        internal async Task Join(string username)
         {
             //if (this.hubConnection != null) return;
 
             var token = await httpClient.PostAsJsonAsync("api/Authentication/login", new
             {
-                UserName = "test" + id,
+                UserName = username,
                 Password = "Ab@123456"
             });
             token.EnsureSuccessStatusCode();
@@ -91,11 +92,27 @@ namespace CourtPiece.Mobile
                 Console.WriteLine(i);
             });
 
+            hubConnection.On<object>("ItIsYourTurn", i =>
+            {
+                OnMyTurn?.Invoke(this, new EventArgs());
+            });
+
+            hubConnection.On<string>("HandWinner", i =>
+            {
+                OnCardReceived?.Invoke(this, Array.Empty<Card>());
+                OnMessageReceived?.Invoke(this, i);
+            });
+
+
+            hubConnection.On<string>("GameWinner", i =>
+            {
+                OnCardReceived?.Invoke(this, Array.Empty<Card>());
+                OnMessageReceived?.Invoke(this, i);
+            });
 
 
             hubConnection.Closed += HubConnection_Closed;
             await hubConnection.SendAsync("joinToRandomRoom");
-            //var result = await httpClient.GetAsync($"api/player/join?roomId={roomId}");
         }
 
         private Task HubConnection_Closed(Exception arg)
