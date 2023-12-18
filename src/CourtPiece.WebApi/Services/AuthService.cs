@@ -93,6 +93,7 @@ public class AuthService : IAuthService
         return tokenHandler.WriteToken(token);
     }
 
+    [GenerateSerializer]
     public class LoginModel
     {
         [Required(ErrorMessage = "User Name is required")]
@@ -102,6 +103,7 @@ public class AuthService : IAuthService
         public string? Password { get; set; }
     }
 
+    [GenerateSerializer]
     public class RegistrationModel
     {
         [Required(ErrorMessage = "User Name is required")]
